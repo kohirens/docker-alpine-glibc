@@ -2,8 +2,7 @@ FROM alpine:3.16 AS base
 
 ARG GLIBC_VER='2.35-r0'
 
-ENV LD_LIBRARY_PATH='/lib:/usr/lib:/usr/glibc-compat/lib:/usr/local/lib'
-ENV LD_LIBRARY_PATH='${LD_LIBRARY_PATH}:/usr/include/sys'
+#ENV LD_LIBRARY_PATH='/lib:/usr/lib:/usr/glibc-compat/lib:/usr/local/lib'
 
 RUN apk --no-progress --purge --no-cache upgrade \
 && apk --no-progress --purge --no-cache add --upgrade --virtual=build_deps \
