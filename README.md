@@ -19,3 +19,28 @@ To build the docker image based on a version of GlibC, run:
 ```shell
 $Env:GLIBC_VER="2.35-r0"; docker compose build --progress plain
 ```
+
+## Test
+
+Running this will allow you to look around the container. The GlibC files will
+have been places in `/usr/glibc-compat`
+
+```shell
+docker run -it --rm --entrypoint "" "kohirens/alpine-glibc:2.35-r0"
+```
+
+## About GlibC Files
+
+The GlibC package will instal files in `/usr/glibc-compat`, such as:
+
+```text
+bin
+etc
+lib
+lib64
+sbin
+share
+```
+You may have to update certain environment variable so that they are used. For
+example, setting LD_LIBRARY_PATH='/usr/glibc-compat/lib'
+before you build a GLibC dependent application.
