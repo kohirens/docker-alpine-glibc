@@ -8,5 +8,5 @@ services:
                 GLIBC_VER: "${GLIBC_VER}"
             dockerfile: "Dockerfile"
             context: "."
-        entrypoint: [ "sh" ]
+            target: "dev"
         tty: true
