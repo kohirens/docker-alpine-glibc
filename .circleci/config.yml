@@ -1,0 +1,120 @@
+version: 2.1
+
+orbs:
+  vro: kohirens/version-release@2.2.2
+
+parameters:
+  secrets:
+    default: kohirens-orb-publishing
+    description: Secrets context
+    type: string
+  ssh_finger:
+    description: SSH fingerprint.
+    type: string
+    default: "8a:c8:37:65:92:ef:a5:09:c5:ac:a1:1d:b1:1f:ed:ab"
+  triggered_by_bot:
+    default: false
+    description: Trigger publishing a release tag workflow.
+    type: boolean
+
+# Anchors
+default-work-env: &default-work-env
+  working_directory: ~/src
+  docker:
+    - image: docker:20.10.14-git
+      auth:
+        username: ${DH_USER}
+        password: ${DH_PASS}
+  resource_class: small
+
+default-env-vars: &default-env-vars
+    DH_IMG_REPO: "kohirens/alpine-glibc"
+
+filter-semantic-tag: &filter-semantic-tag
+  tags:
+    only: /^v?\d+\.\d+\.\d+$/
+  branches:
+    ignore: /.*/
+
+jobs:
+    build-n-test:
+      <<: *default-work-env
+      environment:
+        <<: *default-env-vars
+      steps:
+        - checkout
+        - setup_remote_docker
+        - run:
+            name: "Build Docker image"
+            command: |
+              docker build --rm --no-cache -t "${DH_IMG_REPO}" .
+        - run:
+            name: "Test Docker image"
+            command: |
+              docker run -it --rm "${DH_IMG_REPO}" ls -la /usr/glibc-compat
+
+    publish-image:
+      <<: *default-work-env
+      environment:
+        <<: *default-env-vars
+      steps:
+        - checkout
+        - setup_remote_docker
+        - run:
+            name: Push Docker image
+            command: |
+              echo "Publishing tag << pipeline.git.tag >>"
+              export BUILD_VER="<< pipeline.git.tag >>"
+              if [ -z "${BUILD_VER}" ]; then
+                  echo "cannot publish a Docker image, release-tag is empty"
+                  exit 1
+              fi
+              export DH_IMAGE="${DH_IMG_REPO}:${BUILD_VER}"
+              echo "${DH_PASS}" | docker login -u "${DH_USER}" --password-stdin
+              echo ""
+              echo ""
+              echo "Building ${DH_IMAGE}"
+              docker build --rm -t "${DH_IMAGE}" .
+              echo ""
+              echo ""
+              echo "Building ${DH_IMAGE}"
+              docker push "${DH_IMAGE}"
+              echo ""
+              echo ""
+              echo "Building ${DH_IMAGE}"
+              docker rmi "${DH_IMAGE}"
+
+workflows:
+  quality-control: # Run on all branches and PRs except main|auto-*
+    jobs:
+      - build-n-test:
+          context: << pipeline.parameters.secrets >>
+          filters: { branches: { ignore: /main|auto-update-changelog/ } }
+
+  publish-changelog:
+    when:
+      and:
+        - equal: [main, << pipeline.git.branch >>]
+        - equal: [webhook, << pipeline.trigger_source >>]
+    jobs:
+        - vro/publish-changelog:
+            context: << pipeline.parameters.secrets >>
+            ssh_finger: << pipeline.parameters.ssh_finger >>
+
+  publish-release-tag:
+    when:
+      and:
+        - equal: [main, << pipeline.git.branch >>]
+        - << pipeline.parameters.triggered_by_bot >>
+    jobs:
+      - vro/tag-and-release:
+          context: << pipeline.parameters.secrets >>
+
+  on-tag-release:
+    jobs:
+      - publish-image:
+          context: << pipeline.parameters.secrets >>
+          filters:
+            <<: *filter-semantic-tag
+
+
