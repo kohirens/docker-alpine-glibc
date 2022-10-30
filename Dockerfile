@@ -1,4 +1,4 @@
-FROM alpine:3.16
+FROM alpine:3.16 AS base
 
 ARG GLIBC_VER='2.35-r0'
 
@@ -18,17 +18,6 @@ RUN apk --no-progress --purge --no-cache upgrade \
 && rm -vrf /var/cache/apk/*
 
 # Install vanilla GLibC: https://github.com/sgerrand/alpine-pkg-glibc
-#
-# NOTE: when you run any app that uses the glibc you will get a info message 
-# output. You can ignore these for now, they are caused by a dependency that is
-# in pre-relase mode. I do not believe this is caused by the GLibC files 
-# themselves, but an external dependency from the Alpine repos that is in 
-# pre-release mode.
-#
-# I dug into this and found the cause, but forgot to record them in my notes.
-# I Will need to dig into this again to verify the exact dependency that causes
-# this.
-
 RUN cd /tmp \
  && curl -o /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub \
  && curl -LO https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VER}/glibc-${GLIBC_VER}.apk \
@@ -43,14 +32,6 @@ RUN cd /tmp \
     glibc-${GLIBC_VER}.apk \
     glibc-bin-${GLIBC_VER}.apk \
     glibc-i18n-${GLIBC_VER}.apk
-
-#RUN apk --no-progress --purge --no-cache upgrade \
-# && apk --no-progress --purge --no-cache add --upgrade --virtual=build_deps \
-#    binutils \
-# && apk --no-progress --purge --no-cache upgrade \
-# && rm -vrf /var/cache/apk/*
-
-#RUN objdump -p /usr/lib/libstdc\+\+.so.6
 
 ENTRYPOINT [ ]
 CMD [ ]

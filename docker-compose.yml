@@ -1,10 +1,12 @@
-version: '3.8'
+version: "3.8"
 
 services:
     container:
-        image: 'kohirens/alpine-glibc:${BUILD_VER:-dev}'
+        image: "kohirens/alpine-glibc:${GLIBC_VER:-2.35-r0}"
         build:
-            dockerfile: 'Dockerfile'
-            context: 'alpine-glibc'
-        entrypoint: [ 'sh' ]
+            args:
+                GLIBC_VER: "${GLIBC_VER}"
+            dockerfile: "Dockerfile"
+            context: "."
+        entrypoint: [ "sh" ]
         tty: true
