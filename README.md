@@ -1,5 +1,7 @@
 # Alpine GLIBC
 
+For Docker image tags see [kohirens/alpine-glibc]
+
 Uses vanilla GLibC from: https://github.com/sgerrand/alpine-pkg-glibc
 
 NOTE: When you run any app that uses the glibc you will get a info message
@@ -15,7 +17,6 @@ this.
 ## Status
 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/kohirens/docker-alpine-glib/tree/main.svg?style=shield&&circle-token=22a87e4d249bd98dece7729b486fd32ffae3c8e0)](https://dl.circleci.com/status-badge/redirect/gh/kohirens/docker-alpine-glib/tree/main)
-
 
 ## Build
 
@@ -49,3 +50,7 @@ share
 You may have to update certain environment variable so that they are used. For
 example, setting LD_LIBRARY_PATH='/usr/glibc-compat/lib'
 before you build a GLibC dependent application.
+
+---
+
+[kohirens/alpine-glibc]: https://hub.docker.com/repository/docker/kohirens/alpine-glibc
