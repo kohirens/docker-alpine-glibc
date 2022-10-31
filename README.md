@@ -12,6 +12,11 @@ I dug into this and found the cause, but forgot to record them in my notes.
 I Will need to dig into this again to verify the exact dependency that causes
 this.
 
+## Status
+
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/kohirens/docker-alpine-glib/tree/main.svg?style=shield&&circle-token=22a87e4d249bd98dece7729b486fd32ffae3c8e0)](https://dl.circleci.com/status-badge/redirect/gh/kohirens/docker-alpine-glib/tree/main)
+
+
 ## Build
 
 To build the docker image based on a version of GlibC, run:
