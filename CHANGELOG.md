@@ -2,6 +2,9 @@
 ## [Unreleased]
 
 
+<a name="0.1.2"></a>
+## [0.1.2] - 2022-10-31
+
 <a name="0.1.1"></a>
 ## [0.1.1] - 2022-10-31
 ### Changed
@@ -20,5 +23,6 @@
 - Setting LD_LIBRARY_PATH Environmemtn Variable
 
 
-[Unreleased]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.1.1...HEAD
+[Unreleased]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.1.2...HEAD
+[0.1.2]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.1.1...0.1.2
 [0.1.1]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.1.0...0.1.1
