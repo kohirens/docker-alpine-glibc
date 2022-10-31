@@ -28,6 +28,7 @@ default-work-env: &default-work-env
   resource_class: small
 
 default-env-vars: &default-env-vars
+    GLIBC_VER: "2.35-r0"
     DH_IMG_REPO: "kohirens/alpine-glibc"
 
 filter-semantic-tag: &filter-semantic-tag
@@ -68,6 +69,9 @@ jobs:
               if [ -z "${BUILD_VER}" ]; then
                   echo "cannot publish a Docker image, release-tag is empty"
                   exit 1
+              fi
+              if [ -n "${GLIBC_VER}" ]; then
+                  BUILD_VER="${GLIBC_VER}"
               fi
               export DH_IMAGE="${DH_IMG_REPO}:${BUILD_VER}"
               echo "${DH_PASS}" | docker login -u "${DH_USER}" --password-stdin
