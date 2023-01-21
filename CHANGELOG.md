@@ -3,7 +3,20 @@
 
 
 <a name="0.1.2"></a>
-## [0.1.2] - 2022-10-31
+## [0.1.2] - 2023-01-21
+### Changed
+- Upgraded To Alpine Versuib 3.17
+- Push Additional Tag Prefixed with Alping Version
+- Reduced Docker Image Layers
+- Parameterize Alpine Version
+
+### Fixed
+- Building Docker Image
+- Building Release Image
+
+### Removed
+- Installtions libstdc++ and ca-certificates
+
 
 <a name="0.1.1"></a>
 ## [0.1.1] - 2022-10-31
