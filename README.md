@@ -16,7 +16,7 @@ this.
 
 ## Status
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/kohirens/docker-alpine-glib/tree/main.svg?style=shield&&circle-token=22a87e4d249bd98dece7729b486fd32ffae3c8e0)](https://dl.circleci.com/status-badge/redirect/gh/kohirens/docker-alpine-glib/tree/main)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/kohirens/docker-alpine-glibc/tree/main.svg?style=shield&&circle-token=)](https://dl.circleci.com/status-badge/redirect/gh/kohirens/docker-alpine-glibc/tree/main)
 
 ## Build
 
