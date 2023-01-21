@@ -29,8 +29,8 @@ default-work-env: &default-work-env
 
 default-env-vars: &default-env-vars
     ALPINE_VER: "3.17"
-    DOCKER_BUILDKIT: 1
     DH_IMG_REPO: "kohirens/alpine-glibc"
+    DOCKER_BUILDKIT: 1
     GLIBC_VER: "2.35-r0"
 
 filter-semantic-tag: &filter-semantic-tag
