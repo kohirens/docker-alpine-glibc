@@ -72,10 +72,7 @@ jobs:
                   echo "cannot publish a Docker image, release-tag is empty"
                   exit 1
               fi
-              if [ -n "${GLIBC_VER}" ]; then
-                  BUILD_VER="${GLIBC_VER}"
-              fi
-              export DH_IMAGE="${DH_IMG_REPO}:${BUILD_VER}"
+              export DH_IMAGE="${DH_IMG_REPO}:${GLIBC_VER}"
               echo "${DH_PASS}" | docker login -u "${DH_USER}" --password-stdin
               echo ""
               echo ""
@@ -85,6 +82,7 @@ jobs:
               echo ""
               echo "Building ${DH_IMAGE}"
               docker push "${DH_IMAGE}"
+              docker push "${DH_IMG_REPO}:${ALPINE_VER}-${GLIBC_VER}"
               echo ""
               echo ""
               echo "Building ${DH_IMAGE}"
