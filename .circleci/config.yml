@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  vro: kohirens/version-release@2.2.2
+  vro: kohirens/version-release@2.3.5
 
 parameters:
   secrets:
