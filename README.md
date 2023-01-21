@@ -1,45 +1,35 @@
-# Alpine GLIBC
-
-For Docker image tags see [kohirens/alpine-glibc]
+# Docker Alpine GLibC
 
 Uses vanilla GLibC from: https://github.com/sgerrand/alpine-pkg-glibc
 
-NOTE: When you run any app that uses the glibc you will get a info message
-output. You can ignore these for now, they are caused by a dependency that is
-in pre-release mode. I do not believe this is caused by the GLibC files
-themselves, but an external dependency from the Alpine repos that is in
-pre-release mode.
+NOTICE: This is vanilla GLibC and some older deprecated functions may not
+be available. So when you run any app that uses the glibc, then you may
+get info messages output. You may ignore these if your app continues to pass
+all of its test.
 
-I dug into this and found the cause, but forgot to record them in my notes.
-I Will need to dig into this again to verify the exact dependency that causes
-this.
+Testing is critical before taking your app to production.
 
 ## Status
 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/kohirens/docker-alpine-glibc/tree/main.svg?style=shield&&circle-token=)](https://dl.circleci.com/status-badge/redirect/gh/kohirens/docker-alpine-glibc/tree/main)
 
-## Build
+## Features
 
-To build the development image for testing a version of GlibC, run:
+See [The GNU C Library version 2.35 is now available].
 
-```shell
-docker compose build
+## Usage
+
+This image is meant to be base of another Alpine image that requires GLibC.
+
+For example
+
+```Docker
+FROM kohirens/alpine-glibc AS base
+
+RUN ...
 ```
 
-or without Docker Compose installed
-
-```shell
-docker build -t "kohirens/alpine-glibc:release" --build-arg "ALPINE_VER=3.17" --build-arg "GLIBC_VER=2.35-r0" --target "release" .
-```
-
-## Test
-
-Running this will allow you to look around the container. The GlibC files will
-have been places in `/usr/glibc-compat`
-
-```shell
-docker run -it --rm --entrypoint "" "kohirens/alpine-glibc:release"
-```
+For Docker image tags see [kohirens/alpine-glibc]
 
 ## About GlibC Files
 
@@ -60,3 +50,4 @@ before you build a GLibC dependent application.
 ---
 
 [kohirens/alpine-glibc]: https://hub.docker.com/repository/docker/kohirens/alpine-glibc
+[The GNU C Library version 2.35 is now available]: https://sourceware.org/pipermail/libc-alpha/2022-February/136040.html
