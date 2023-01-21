@@ -50,7 +50,8 @@ jobs:
         - run:
             name: "Build Docker image"
             command: |
-              docker build --rm --no-cache -t "${DH_IMG_REPO}" .
+              env
+              docker build --rm --no-cache -t "${DH_IMG_REPO}" --build-arg ALPINE_VER --build-arg GLIBC_VER --target "release" .
         - run:
             name: "Test Docker image"
             command: |
@@ -77,7 +78,8 @@ jobs:
               echo ""
               echo ""
               echo "Building ${DH_IMAGE}"
-              docker build --rm -t "${DH_IMAGE}" --target "release" .
+              docker build --rm -t "${DH_IMAGE}" --build-arg ALPINE_VER --build-arg GLIBC_VER --target "release" .
+
               echo ""
               echo ""
               echo "Building ${DH_IMAGE}"
