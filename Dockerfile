@@ -1,6 +1,9 @@
-FROM alpine:3.16 AS base
+ARG ALPINE_VER
+ARG GLIBC_VER
 
-ARG GLIBC_VER='2.35-r0'
+FROM alpine:${ALPINE_VER} AS base
+
+ARG GLIBC_VER
 
 #ENV LD_LIBRARY_PATH='/lib:/usr/lib:/usr/glibc-compat/lib:/usr/local/lib'
 

@@ -2,9 +2,10 @@ version: "3.8"
 
 services:
     container:
-        image: "kohirens/alpine-glibc:${GLIBC_VER:-2.35-r0}"
+        image: "kohirens/alpine-glibc:dev-${ALPINE_VER}-${GLIBC_VER}"
         build:
             args:
+                ALPINE_VER: "${ALPINE_VER}"
                 GLIBC_VER: "${GLIBC_VER}"
             dockerfile: "Dockerfile"
             context: "."
