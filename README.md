@@ -20,7 +20,7 @@ this.
 
 ## Build
 
-To build the docker image based on a version of GlibC, run:
+To build the development image for testing a version of GlibC, run:
 
 ```shell
 docker compose build
@@ -29,7 +29,7 @@ docker compose build
 or without Docker Compose installed
 
 ```shell
-docker build -t "kohirens/alpine-glibc:2.35-r0" --build-arg "ALPINE_VER=3.17" --build-arg "GLIBC_VER=2.35-r0" .
+docker build -t "kohirens/alpine-glibc:release" --build-arg "ALPINE_VER=3.17" --build-arg "GLIBC_VER=2.35-r0" --target "release" .
 ```
 
 ## Test
@@ -38,7 +38,7 @@ Running this will allow you to look around the container. The GlibC files will
 have been places in `/usr/glibc-compat`
 
 ```shell
-docker run -it --rm --entrypoint "" "kohirens/alpine-glibc:2.35-r0"
+docker run -it --rm --entrypoint "" "kohirens/alpine-glibc:release"
 ```
 
 ## About GlibC Files
