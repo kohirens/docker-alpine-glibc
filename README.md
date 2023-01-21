@@ -29,7 +29,7 @@ docker compose build
 or without Docker Compose installed
 
 ```shell
-docker build -t "kohirens/alpine-glibc:2.35-r0" --build-arg "ALPINE_VER=3.16" --build-arg "GLIBC_VER=2.35-r0" .
+docker build -t "kohirens/alpine-glibc:2.35-r0" --build-arg "ALPINE_VER=3.17" --build-arg "GLIBC_VER=2.35-r0" .
 ```
 
 ## Test
