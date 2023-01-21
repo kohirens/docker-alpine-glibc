@@ -5,7 +5,7 @@ orbs:
 
 parameters:
   secrets:
-    default: kohirens-orb-publishing
+    default: kohirens-automation
     description: Secrets context
     type: string
   ssh_finger:
