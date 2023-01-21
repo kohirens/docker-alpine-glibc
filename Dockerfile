@@ -9,8 +9,6 @@ ARG GLIBC_VER
 
 RUN apk --no-progress --purge --no-cache upgrade \
 && apk --no-progress --purge --no-cache add --upgrade --virtual=build_deps \
-   ca-certificates \
-   libstdc++ \
    gnupg \
 && apk --no-progress --purge --no-cache upgrade \
 && rm -vrf /var/cache/apk/*
