@@ -28,6 +28,7 @@ default-work-env: &default-work-env
   resource_class: small
 
 default-env-vars: &default-env-vars
+    ALPINE_VER: "3.16"
     GLIBC_VER: "2.35-r0"
     DH_IMG_REPO: "kohirens/alpine-glibc"
 

@@ -23,7 +23,13 @@ this.
 To build the docker image based on a version of GlibC, run:
 
 ```shell
-$Env:GLIBC_VER="2.35-r0"; docker compose build --progress plain
+docker compose build
+```
+
+or without Docker Compose installed
+
+```shell
+docker build -t "kohirens/alpine-glibc:2.35-r0" --build-arg "ALPINE_VER=3.16" --build-arg "GLIBC_VER=2.35-r0" .
 ```
 
 ## Test
@@ -37,7 +43,7 @@ docker run -it --rm --entrypoint "" "kohirens/alpine-glibc:2.35-r0"
 
 ## About GlibC Files
 
-The GlibC package will instal files in `/usr/glibc-compat`, such as:
+The GlibC package will install files in `/usr/glibc-compat`, such as:
 
 ```text
 bin
