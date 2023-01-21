@@ -8,6 +8,10 @@ parameters:
     default: kohirens-automation
     description: Secrets context
     type: string
+  secrets_docker:
+    default: kohirens-automation-dockerhub
+    description: Secrets context
+    type: string
   ssh_finger:
     description: SSH fingerprint.
     type: string
@@ -79,7 +83,6 @@ jobs:
               echo ""
               echo "Building ${DH_IMAGE}"
               docker build --rm -t "${DH_IMAGE}" --build-arg ALPINE_VER --build-arg GLIBC_VER --target "release" .
-
               echo ""
               echo ""
               echo "Building ${DH_IMAGE}"
@@ -119,7 +122,7 @@ workflows:
   on-tag-release:
     jobs:
       - publish-image:
-          context: << pipeline.parameters.secrets >>
+          context: << pipeline.parameters.secrets_docker >>
           filters:
             <<: *filter-semantic-tag
 
