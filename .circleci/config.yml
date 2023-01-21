@@ -82,7 +82,11 @@ jobs:
               echo ""
               echo ""
               echo "Building ${DH_IMAGE}"
-              docker build --rm -t "${DH_IMAGE}" --build-arg ALPINE_VER --build-arg GLIBC_VER --target "release" .
+              docker build --rm \
+                  -t "${DH_IMAGE}" \
+                  -t "${DH_IMG_REPO}:${ALPINE_VER}-${GLIBC_VER}" \
+                  --build-arg ALPINE_VER --build-arg GLIBC_VER \
+                  --target "release" .
               echo ""
               echo ""
               echo "Building ${DH_IMAGE}"
