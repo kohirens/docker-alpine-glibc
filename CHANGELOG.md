@@ -4,6 +4,9 @@
 
 <a name="0.1.3"></a>
 ## [0.1.3] - 2023-01-21
+### Changed
+- Updated Documentation
+
 
 <a name="0.1.2"></a>
 ## [0.1.2] - 2023-01-21
