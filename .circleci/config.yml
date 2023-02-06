@@ -31,6 +31,13 @@ executors:
           username: ${DH_USER}
           password: ${DH_PASS}
     resource_class: small
+  kohirens-ci:
+    docker: # see https://circleci.com/docs/building-docker-images/#docker-version
+      - image: cimg/base:2023.04
+        auth:
+          username: ${DH_USER}
+          password: ${DH_PASS}
+    resource_class: small
 
 default-env-vars: &default-env-vars
     ALPINE_VER: "3.17"
@@ -60,6 +67,30 @@ jobs:
             name: "Test Docker image"
             command: |
               docker run -it --rm "${DH_IMG_REPO}" ls -la /usr/glibc-compat
+    get-docker-hub-version:
+      parameters:
+        repo:
+          description: "Docker Hub repository name"
+          type: string
+        img:
+          description: "Docker Hub image name"
+          type: string
+        page:
+          default: 1
+          description: "Docker Hub API query page"
+          type: integer
+        page_size:
+          default: 2
+          description: "Docker Hub API results per page"
+          type: integer
+      executor: kohirens-ci
+      steps:
+        - checkout
+        - run:
+            name: "get alpine latest"
+            command: |
+              chmod +x .circleci/get-alpine-latest.sh
+              ./.circleci/get-alpine-latest.sh
 
     publish-image:
       executor: image-builder
@@ -100,9 +131,14 @@ jobs:
 workflows:
   quality-control: # Run on all branches and PRs except main|auto-*
     jobs:
+      - get-docker-hub-version:
+          repo: "alpine"
+          img: "alpine"
+          context: << pipeline.parameters.secrets_docker >>
       - build-n-test:
           context: << pipeline.parameters.secrets >>
           filters: { branches: { ignore: /main|auto-update-changelog/ } }
+          requires: [ get-docker-hub-version ]
 
   publish-changelog:
     when:
