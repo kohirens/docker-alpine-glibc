@@ -22,14 +22,15 @@ parameters:
     type: boolean
 
 # Anchors
-default-work-env: &default-work-env
-  working_directory: ~/src
-  docker:
-    - image: docker:20.10.14-git
-      auth:
-        username: ${DH_USER}
-        password: ${DH_PASS}
-  resource_class: small
+executors:
+  image-builder:
+    working_directory: ~/src
+    docker: # see https://circleci.com/docs/building-docker-images/#docker-version
+      - image: docker:20.10.18-git
+        auth:
+          username: ${DH_USER}
+          password: ${DH_PASS}
+    resource_class: small
 
 default-env-vars: &default-env-vars
     ALPINE_VER: "3.17"
@@ -45,7 +46,7 @@ filter-semantic-tag: &filter-semantic-tag
 
 jobs:
     build-n-test:
-      <<: *default-work-env
+      executor: image-builder
       environment:
         <<: *default-env-vars
       steps:
@@ -54,7 +55,6 @@ jobs:
         - run:
             name: "Build Docker image"
             command: |
-              env
               docker build --rm --no-cache -t "${DH_IMG_REPO}" --build-arg ALPINE_VER --build-arg GLIBC_VER --target "release" .
         - run:
             name: "Test Docker image"
@@ -62,7 +62,7 @@ jobs:
               docker run -it --rm "${DH_IMG_REPO}" ls -la /usr/glibc-compat
 
     publish-image:
-      <<: *default-work-env
+      executor: image-builder
       environment:
         <<: *default-env-vars
       steps:
