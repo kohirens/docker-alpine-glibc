@@ -1,28 +1,34 @@
-ARG ALPINE_VER
+ARG ALPINE_VER=3.17
+ARG GLIBC_VER=2.35-r1
+
+#FROM alpine:${ALPINE_VER} AS release
+FROM mcr.microsoft.com/dotnet/aspnet:7.0.5-alpine3.17-amd64 AS release
+
 ARG GLIBC_VER
 
-FROM alpine:${ALPINE_VER} AS release
-
-ARG GLIBC_VER
+ENV LD_LIBRARY_PATH='/lib:/usr/lib:/usr/glibc-compat/lib:/usr/local/lib'
 
 RUN apk --no-progress --purge --no-cache upgrade \
 && apk --no-progress --purge --no-cache add --upgrade --virtual=build_deps \
-   gnupg \
    libstdc++ \
 && apk --no-progress --purge --no-cache upgrade \
 && rm -vrf /var/cache/apk/*
 
 # Install vanilla GLibC: https://github.com/sgerrand/alpine-pkg-glibc
-WORKDIR "/tmp"
+WORKDIR /tmp
 
 RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub \
  && wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VER}/glibc-${GLIBC_VER}.apk \
- && wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VER}/glibc-bin-${GLIBC_VER}.apk \
+ && apk add --force-overwrite glibc-${GLIBC_VER}.apk
+
+RUN wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VER}/glibc-bin-${GLIBC_VER}.apk \
  && wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VER}/glibc-i18n-${GLIBC_VER}.apk \
- && apk add --force-overwrite glibc-${GLIBC_VER}.apk glibc-bin-${GLIBC_VER}.apk glibc-i18n-${GLIBC_VER}.apk \
- && rm -vrf /var/cache/apk/* \
- && rm -rf /tmp/*
-RUN /usr/glibc-compat/bin/localedef -i en_US -f UTF-8 en_US.UTF-8
+ && apk add --force-overwrite glibc-bin-${GLIBC_VER}.apk glibc-i18n-${GLIBC_VER}.apk
+
+# Cleanup
+RUN rm -vrf /var/cache/apk/* \
+ && rm -rf /tmp/* \
+ && rm /etc/apk/keys/sgerrand.rsa.pub
 
 ENTRYPOINT [ ]
 
