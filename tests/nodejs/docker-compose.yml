@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+    container:
+        image: "kohirens/alpine-nodejs:${ALPINE_VER}-${GLIBC_VER}"
+        build:
+            args:
+                ALPINE_VER: ${ALPINE_VER}
+                GLIBC_VER: ${GLIBC_VER}
+                NODE_VER: ${NODE_VER}
+                NODE_DISTRO: ${NODE_DISTRO}
+                NODE_HOME: ${NODE_HOME}
+            dockerfile: "Dockerfile"
+            context: "."
+            target: "dev"
+        tty: true

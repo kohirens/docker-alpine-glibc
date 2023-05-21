@@ -61,19 +61,5 @@ RUN /usr/glibc-compat/bin/localedef -i en_US -f UTF-8 en_US.UTF-8
 # There seems to be symbols (maybe functions) missing.
 # It will work if you:
 # $ apk --force-overwrite add libc6-compat gcompat
-# However you will see output like:
-# $ node: /usr/lib/libstdc++.so.6: no version information available (required by node)
-ENV NODE_VER="v20.2.0"
-ENV NODE_DISTRO="linux-x64"
-ENV NODE_HOME="/usr/local/lib/nodejs"
-
-WORKDIR /tmp
-
-RUN wget https://nodejs.org/dist/${NODE_VER}/node-${NODE_VER}-${NODE_DISTRO}.tar.xz \
- && mkdir -p "${NODE_HOME}" \
- && tar -vxf node-${NODE_VER}-${NODE_DISTRO}.tar.xz -C /usr/local/lib/nodejs \
- && rm -f node-${NODE_VER}-${NODE_DISTRO}.tar.xz
-
-ENV PATH=${NODE_HOME}/node-${NODE_VER}-${NODE_DISTRO}/bin:${PATH}
 
 ENTRYPOINT [ "start.sh" ]
