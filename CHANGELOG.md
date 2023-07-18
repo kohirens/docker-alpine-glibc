@@ -2,6 +2,12 @@
 ## [Unreleased]
 
 
+<a name="0.2.1"></a>
+## [0.2.1] - 2023-07-18
+### Fixed
+- Release
+
+
 <a name="0.2.0"></a>
 ## [0.2.0] - 2023-07-18
 ### Changed
@@ -57,7 +63,8 @@
 - Setting LD_LIBRARY_PATH Environmemtn Variable
 
 
-[Unreleased]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.2.0...HEAD
+[Unreleased]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.2.1...HEAD
+[0.2.1]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.1.4...0.2.0
 [0.1.4]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.1.2...0.1.3
