@@ -155,7 +155,9 @@ workflows:
   on-tag-release:
     jobs:
       - fetch-code:
-          context: << pipeline.parameters.secrets_docker >>
+          context:
+            - << pipeline.parameters.secrets >>
+            - << pipeline.parameters.secrets_docker >>
           filters:
             <<: *filter-semantic-tag
       - publish-image:
