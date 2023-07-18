@@ -23,27 +23,24 @@ parameters:
 
 # Anchors
 executors:
-  image-builder:
-    working_directory: ~/src
-    docker: # see https://circleci.com/docs/building-docker-images/#docker-version
-      - image: docker:20.10.18-git
+  base:
+    docker: # see https://circleci.com/developer/images/image/cimg/base#how-this-image-works
+      - image: cimg/base:2023.04
         auth:
           username: ${DH_USER}
           password: ${DH_PASS}
     resource_class: small
-  kohirens-ci:
-    docker: # see https://circleci.com/docs/building-docker-images/#docker-version
-      - image: cimg/base:2023.04
+  go-get-latest:
+    docker: # see https://github.com/kohirens/go-get-latest
+      - image: kohirens/go-get-latest:0.4.0
         auth:
           username: ${DH_USER}
           password: ${DH_PASS}
     resource_class: small
 
 default-env-vars: &default-env-vars
-    ALPINE_VER: "3.17"
     DH_IMG_REPO: "kohirens/alpine-glibc"
     DOCKER_BUILDKIT: 1
-    GLIBC_VER: "2.35-r0"
 
 filter-semantic-tag: &filter-semantic-tag
   tags:
@@ -53,55 +50,51 @@ filter-semantic-tag: &filter-semantic-tag
 
 jobs:
     build-n-test:
-      executor: image-builder
+      executor: base
       environment:
         <<: *default-env-vars
       steps:
-        - checkout
+        - attach_workspace: { at: "." }
         - setup_remote_docker
         - run:
             name: "Build Docker image"
             command: |
-              docker build --rm --no-cache -t "${DH_IMG_REPO}" --build-arg ALPINE_VER --build-arg GLIBC_VER --target "release" .
+              export ALPINE_VER=$(cat alpine-version.txt)
+              export GLIBC_VER=$(cat alpine-glibc-version.txt)
+              echo "building alpine-${ALPINE_VER}-glibc-${GLIBC_VER}"
+              docker build --rm --no-cache -t "${DH_IMG_REPO}" \
+                --build-arg ALPINE_VER --build-arg GLIBC_VER --target "release" \
+                --progress plain  .
         - run:
             name: "Test Docker image"
             command: |
               docker run -it --rm "${DH_IMG_REPO}" ls -la /usr/glibc-compat
-    get-docker-hub-version:
-      parameters:
-        repo:
-          description: "Docker Hub repository name"
-          type: string
-        img:
-          description: "Docker Hub image name"
-          type: string
-        page:
-          default: 1
-          description: "Docker Hub API query page"
-          type: integer
-        page_size:
-          default: 2
-          description: "Docker Hub API results per page"
-          type: integer
-      executor: kohirens-ci
+
+    fetch-code:
+      executor: go-get-latest
       steps:
         - checkout
         - run:
             name: "get alpine latest"
             command: |
-              chmod +x .circleci/get-alpine-latest.sh
-              ./.circleci/get-alpine-latest.sh
+              go-get-latest alpine > alpine-version.txt
+              go-get-latest alpine-glibc > alpine-glibc-version.txt
+        - persist_to_workspace:
+            root: .
+            paths: [ ./* ]
 
     publish-image:
-      executor: image-builder
+      executor: base
       environment:
         <<: *default-env-vars
       steps:
-        - checkout
+        - attach_workspace: { at: "." }
         - setup_remote_docker
         - run:
             name: Push Docker image
             command: |
+              export ALPINE_VER=$(cat alpine-version.txt)
+              export GLIBC_VER=$(cat alpine-glibc-version.txt)
               echo "Publishing tag << pipeline.git.tag >>"
               export BUILD_VER="<< pipeline.git.tag >>"
               if [ -z "${BUILD_VER}" ]; then
@@ -131,14 +124,14 @@ jobs:
 workflows:
   quality-control: # Run on all branches and PRs except main|auto-*
     jobs:
-      - get-docker-hub-version:
-          repo: "alpine"
-          img: "alpine"
-          context: << pipeline.parameters.secrets_docker >>
+      - fetch-code:
+          context:
+            - << pipeline.parameters.secrets >>
+            - << pipeline.parameters.secrets_docker >>
+          filters: { branches: { ignore: /main|auto-update-changelog/ } }
       - build-n-test:
           context: << pipeline.parameters.secrets >>
-          filters: { branches: { ignore: /main|auto-update-changelog/ } }
-          requires: [ get-docker-hub-version ]
+          requires: [ fetch-code ]
 
   publish-changelog:
     when:
@@ -161,9 +154,14 @@ workflows:
 
   on-tag-release:
     jobs:
+      - fetch-code:
+          context: << pipeline.parameters.secrets_docker >>
+          filters:
+            <<: *filter-semantic-tag
       - publish-image:
           context: << pipeline.parameters.secrets_docker >>
           filters:
             <<: *filter-semantic-tag
+          requires: [ fetch-code  ]
 
 
