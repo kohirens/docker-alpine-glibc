@@ -2,6 +2,15 @@
 ## [Unreleased]
 
 
+<a name="0.2.0"></a>
+## [0.2.0] - 2023-07-18
+### Changed
+- Cleaned Up Docker Image
+
+### Fixed
+- Vanilla GLibC Missing Symlink To LD-Lib64
+
+
 <a name="0.1.4"></a>
 ## [0.1.4] - 2023-01-21
 ### Fixed
@@ -48,7 +57,8 @@
 - Setting LD_LIBRARY_PATH Environmemtn Variable
 
 
-[Unreleased]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.1.4...HEAD
+[Unreleased]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.1.4...0.2.0
 [0.1.4]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/kohirens/docker-alpine-glib.git/compare/0.1.1...0.1.2
