@@ -1,4 +1,4 @@
-{{ if .Versions -}}
+{{ if .Unreleased -}}
 <a name="unreleased"></a>
 ## [Unreleased]
 
@@ -22,13 +22,6 @@
 {{ end }}
 {{ end -}}
 
-{{- if .RevertCommits -}}
-### Reverts
-{{ range .RevertCommits -}}
-- {{ .Revert.Header }}
-{{ end }}
-{{ end -}}
-
 {{- if .NoteGroups -}}
 {{ range .NoteGroups -}}
 ### {{ .Title }}
@@ -39,11 +32,14 @@
 {{ end -}}
 {{ end -}}
 
+{{- if .UnreleasedHash.Short }}
+[Unreleased]: {{ .Info.RepositoryURL }}/compare/{{ .UnreleasedHash.Short }}...HEAD
+{{ end -}}
 {{- if .Versions }}
 [Unreleased]: {{ .Info.RepositoryURL }}/compare/{{ $latest := index .Versions 0 }}{{ $latest.Tag.Name }}...HEAD
+{{ end -}}
 {{ range .Versions -}}
 {{ if .Tag.Previous -}}
 [{{ .Tag.Name }}]: {{ $.Info.RepositoryURL }}/compare/{{ .Tag.Previous.Name }}...{{ .Tag.Name }}
-{{ end -}}
 {{ end -}}
 {{ end -}}
