@@ -1,7 +1,7 @@
 ARG ALPINE_VER
 ARG GLIBC_VER
 
-FROM kohirens/alpine-glibc:dev-${ALPINE_VER}-${GLIBC_VER} AS dev
+FROM kohirens/alpine-glibc:dev-${ALPINE_VER}-${GLIBC_VER}
 
 ARG NODE_VER
 ARG NODE_DISTRO

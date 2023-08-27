@@ -52,23 +52,58 @@ jobs:
     build-n-test:
       executor: base
       environment:
+        NODE_VER: v20.2.0
+        NODE_DISTRO: linux-x64
+        NODE_HOME: /usr/local/lib/nodejs
         <<: *default-env-vars
       steps:
         - attach_workspace: { at: "." }
         - setup_remote_docker
         - run:
-            name: "Build Docker image"
+            name: "Build container image and test"
             command: |
               export ALPINE_VER=$(cat alpine-version.txt)
               export GLIBC_VER=$(cat alpine-glibc-version.txt)
-              echo "building alpine-${ALPINE_VER}-glibc-${GLIBC_VER}"
-              docker build --rm --no-cache -t "${DH_IMG_REPO}" \
+              DH_IMG="${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}"
+              echo "building ${DH_IMG}"
+              docker build --rm --no-cache \
+                -t "${DH_IMG}" \
                 --build-arg ALPINE_VER --build-arg GLIBC_VER --target "release" \
                 --progress plain  .
+              docker run -it --rm "${DH_IMG}" ls -la /usr/glibc-compat
         - run:
-            name: "Test Docker image"
+            name: "Build Alpine glibc against AWS CLI"
             command: |
-              docker run -it --rm "${DH_IMG_REPO}" ls -la /usr/glibc-compat
+              export ALPINE_VER=$(cat alpine-version.txt)
+              export GLIBC_VER=$(cat alpine-glibc-version.txt)
+              DH_IMG="${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}-aws-cli"
+              echo "building ${DH_IMG}"
+              docker build --rm -t "${DH_IMG}" \
+                --build-arg ALPINE_VER --build-arg GLIBC_VER \
+                --progress plain  tests/aws-cli
+              docker rmi "${DH_IMG}"
+        - run:
+            name: "Build Alpine glibc against NodeJS"
+            command: |
+              export ALPINE_VER=$(cat alpine-version.txt)
+              export GLIBC_VER=$(cat alpine-glibc-version.txt)
+              DH_IMG="${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}-nodejs"
+              echo "building ${DH_IMG}"
+              docker build --rm -t "${DH_IMG}" \
+                --build-arg ALPINE_VER --build-arg GLIBC_VER \
+                --build-arg NODE_VER --build-arg NODE_DISTRO \
+                --build-arg NODE_HOME \
+                --progress plain  tests/nodejs
+              docker rmi "${DH_IMG}"
+        - run:
+            name: "Cleanup container images"
+            command: |
+              docker ps -a
+              docker images
+              export ALPINE_VER=$(cat alpine-version.txt)
+              export GLIBC_VER=$(cat alpine-glibc-version.txt)
+              DH_IMG="${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}"
+              docker rmi "${DH_IMG}"
 
     fetch-code:
       executor: go-get-latest
@@ -95,30 +130,22 @@ jobs:
             command: |
               export ALPINE_VER=$(cat alpine-version.txt)
               export GLIBC_VER=$(cat alpine-glibc-version.txt)
-              echo "Publishing tag << pipeline.git.tag >>"
-              export BUILD_VER="<< pipeline.git.tag >>"
-              if [ -z "${BUILD_VER}" ]; then
-                  echo "cannot publish a Docker image, release-tag is empty"
-                  exit 1
-              fi
-              export DH_IMAGE="${DH_IMG_REPO}:${GLIBC_VER}"
+              export DH_IMAGE="${DH_IMG_REPO}:${ALPINE_VER}-${GLIBC_VER}"
               echo "${DH_PASS}" | docker login -u "${DH_USER}" --password-stdin
               echo ""
               echo ""
               echo "Building ${DH_IMAGE}"
-              docker build --rm \
-                  -t "${DH_IMAGE}" \
+              docker build --rm --no-cache \
                   -t "${DH_IMG_REPO}:${ALPINE_VER}-${GLIBC_VER}" \
                   --build-arg ALPINE_VER --build-arg GLIBC_VER \
                   --target "release" .
               echo ""
               echo ""
-              echo "Building ${DH_IMAGE}"
+              echo "Pushing ${DH_IMAGE}"
               docker push "${DH_IMAGE}"
-              docker push "${DH_IMG_REPO}:${ALPINE_VER}-${GLIBC_VER}"
               echo ""
               echo ""
-              echo "Building ${DH_IMAGE}"
+              echo "Cleanup ${DH_IMAGE}"
               docker rmi "${DH_IMAGE}"
 
 workflows:
