@@ -110,7 +110,7 @@ jobs:
       steps:
         - checkout
         - run:
-            name: "get alpine latest"
+            name: "Get Alpine & Go latest versions"
             command: |
               go-get-latest alpine > alpine-version.txt
               go-get-latest alpine-glibc > alpine-glibc-version.txt
@@ -202,4 +202,19 @@ workflows:
             <<: *filter-semantic-tag
           requires: [ fetch-code  ]
 
-
+  scheduled-weekly-check:
+    when:
+      and:
+        - equal: ["scheduled-weekly-check", << pipeline.parameters.triggered_flow >>]
+        - equal: [ main, << pipeline.git.branch >> ]
+    jobs:
+      - fetch-code:
+          context:
+            - << pipeline.parameters.secrets >>
+            - << pipeline.parameters.secrets_docker >>
+      - build-n-test:
+          context: << pipeline.parameters.secrets >>
+          requires: [ fetch-code ]
+      - publish-image:
+          context: << pipeline.parameters.secrets_docker >>
+          requires: [ build-n-test ]
