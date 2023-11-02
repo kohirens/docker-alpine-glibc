@@ -5,11 +5,11 @@ services:
         image: "kohirens/alpine-nodejs:${ALPINE_VER}-${GLIBC_VER}"
         build:
             args:
-                ALPINE_VER: ${ALPINE_VER}
-                GLIBC_VER: ${GLIBC_VER}
-                NODE_VER: ${NODE_VER}
-                NODE_DISTRO: ${NODE_DISTRO}
-                NODE_HOME: ${NODE_HOME}
+                ALPINE_VER: "3.18.4"
+                GLIBC_VER: "2.35-r1"
+                NODE_VER: "v20.2.0"
+                NODE_DISTRO: "linux-x64"
+                NODE_HOME: "/usr/local/lib/nodejs"
             dockerfile: "Dockerfile"
             context: "."
             target: "dev"
