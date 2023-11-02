@@ -5,9 +5,9 @@ services:
         image: "kohirens/alpine-awscli:${AWS_VER}-${ALPINE_VER}-${GLIBC_VER}"
         build:
             args:
-                ALPINE_VER: ${ALPINE_VER}
-                GLIBC_VER: ${GLIBC_VER}
+                ALPINE_VER: "3.18.4"
+                GLIBC_VER: "2.35-r1"
+                AWS_VER: "v2"
             dockerfile: "Dockerfile"
             context: "."
-            target: "dev"
         tty: true
