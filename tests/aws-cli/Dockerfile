@@ -16,8 +16,13 @@ RUN apk --no-progress --purge --no-cache upgrade \
  && rm -vrf /var/cache/apk/* \
  && rm -rf /tmp/*
 
-RUN wget  -O "awscliv2.zip" "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" \
- && unzip awscliv2.zip
+COPY public-gpg-key ./public-gpg-key
 
-RUN ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli \
- && aws --version
+RUN wget -O "awscliv2.zip" "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" \
+ && gpg --import public-gpg-key \
+ && wget -O awscliv2.sig https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip.sig \
+ && gpg --verify awscliv2.sig awscliv2.zip \
+ && unzip -q awscliv2.zip
+
+RUN ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli
+RUN aws --version

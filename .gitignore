@@ -4,3 +4,4 @@
 
 # Files
 # -----
+/tests/aws-cli/.env
