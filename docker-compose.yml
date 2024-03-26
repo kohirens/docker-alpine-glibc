@@ -9,5 +9,9 @@ services:
                 GLIBC_VER: "${GLIBC_VER}"
             dockerfile: "Dockerfile"
             context: "."
-            target: "dev"
+            target: "release"
         tty: true
+        deploy:
+            resources:
+                limits:
+                    cpus: "2"

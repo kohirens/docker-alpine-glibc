@@ -1,65 +1,98 @@
-ARG ALPINE_VER=3.18
-ARG GLIBC_VER=2.35-r1
+ARG ALPINE_VER="3.19"
+ARG GLIBC_VER="2.39"
+ARG PREFIX_DIR="/usr/glibc-compat"
+
+FROM alpine:${ALPINE_VER} AS alpine-env
+
+ARG USER_NAME
+ARG USER_UID
+ARG USER_GID
+ARG USER_GROUP
+
+ENV SHELL /bin/bash
+
+WORKDIR /tmp
+
+# gettext contains msgfmt, texinfo contains makeinfo
+# make check fails with error about ctype.h which is part of musl-dev
+RUN apk --no-progress --purge --no-cache upgrade \
+ && apk --no-progress --purge --no-cache add --upgrade \
+    bash \
+    binutils \
+    bison \
+    gawk \
+    gcc \
+    gettext \
+    git \
+    grep \
+    linux-headers \
+    make \
+    perl \
+    python3 \
+    texinfo \
+ && apk --no-progress --purge --no-cache upgrade \
+ && rm -vrf /var/cache/apk/* \
+ && rm -rf /tmp/* \
+ && git --version
+
+# TODO: Try building gcc and makig libstdc++ to fix the nodejs version info warning.
+
+# Build GlibC libssp dependency
+# libssp-nonshared requires libc-dev
+FROM alpine-env AS libssp
+
+RUN apk --no-progress --purge --no-cache upgrade \
+ && apk --no-progress --purge --no-cache add --upgrade \
+    libc-dev \
+ && apk --no-progress --purge --no-cache upgrade \
+ && rm -vrf /var/cache/apk/* \
+ && rm -rf /tmp/* \
+ && cd /tmp \
+ && git clone https://github.com/intc/libssp-nonshared \
+ && cd libssp-nonshared \
+ && ./configure \
+ && make \
+ && make install
+
+FROM alpine-env AS build
+
+ARG GLIBC_VER
+
+COPY --from=libssp /usr/local/lib/libssp_nonshared.a /usr/local/lib
+
+# Its way faster to use the tar over the git repo.
+RUN wget https://ftp.gnu.org/gnu/glibc/glibc-"${GLIBC_VER}".tar.gz \
+ && tar -xf glibc-"${GLIBC_VER}".tar.gz \
+ && mv glibc-"${GLIBC_VER}" glibc
+
+RUN mkdir -p /tmp/build/glibc \
+ && cd /tmp/build/glibc \
+ && /tmp/glibc/configure --prefix=/usr/glibc-"${GLIBC_VER}" --enable-stack-protector=strong --disable-werror \
+ && make -r PARALLELMFLAGS="-j 2" > /tmp/make-glibc-"${GLIBC_VER}".log
+
+RUN cd /tmp/build/glibc \
+ && make install > /tmp/make-install-glibc-"${GLIBC_VER}".log
+
+# Stop here to manually build when you need to troubleshoot.
+COPY --chmod=0774 start.sh /usr/local/bin
+ENTRYPOINT ["start.sh"]
 
 FROM alpine:${ALPINE_VER} AS release
 
 ARG GLIBC_VER
 
-#ENV LD_LIBRARY_PATH='/usr/glibc-compat/lib'
+COPY --from=build /usr/glibc-"${GLIBC_VER}" /usr/glibc-"${GLIBC_VER}"
+COPY --from=build "/usr/lib/libstdc++.so.6"  /usr/lib
+COPY --from=build "/usr/lib/libstdc++.so.6.0.32"  /usr/lib
+COPY --from=build "/usr/lib/libgcc_s.so.1"  /usr/lib
 
-RUN apk --no-progress --purge --no-cache upgrade \
-&& apk --no-progress --purge --no-cache add --upgrade --virtual=build_deps \
-   libstdc++ \
-&& apk --no-progress --purge --no-cache upgrade \
-&& rm -vrf /var/cache/apk/*
+RUN ln -s /usr/glibc-"${GLIBC_VER}"/lib/ld-linux-x86-64.so.2 /usr/lib/ld-linux-x86-64.so.2 \
+ && ln -s /usr/glibc-"${GLIBC_VER}"/etc/ld.so.cache /etc/ld.so.cache \
+ && mkdir -p /lib64 \
+ && ln -v -s -b -S .bak /usr/glibc-"${GLIBC_VER}"/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
 
-# Install vanilla GLibC: https://github.com/sgerrand/alpine-pkg-glibc
-WORKDIR /tmp
+# Allows existing libs and
+ENV LD_LIBRARY_PATH=/lib:/usr/lib:/usr/glibc-"${GLIBC_VER}:${LD_LIBRARY_PATH}"
 
-RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub \
- && wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VER}/glibc-${GLIBC_VER}.apk \
- && apk add --force-overwrite glibc-${GLIBC_VER}.apk
-
-RUN wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VER}/glibc-bin-${GLIBC_VER}.apk \
- && wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VER}/glibc-i18n-${GLIBC_VER}.apk \
- && apk add --force-overwrite glibc-bin-${GLIBC_VER}.apk glibc-i18n-${GLIBC_VER}.apk
-
-# Patch - Vanilla GlibC link lib64 libs again.
-RUN ln -v -s -b -S .bak /usr/glibc-compat/lib64/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
-
-# Cleanup
-RUN rm -vrf /var/cache/apk/* \
- && rm -rf /tmp/* \
- && rm /etc/apk/keys/sgerrand.rsa.pub
-
-ENTRYPOINT [ ]
-
-CMD [ ]
-
-FROM release AS dev
-
-COPY start.sh /usr/local/bin/
-
-# Install tools to help debug
-RUN apk --no-progress --purge --no-cache upgrade \
- && apk --no-progress --purge --no-cache add --upgrade --virtual=build_deps \
-    binutils \
- && apk --no-progress --purge --no-cache upgrade \
- && rm -vrf /var/cache/apk/* \
- && chmod a+x /usr/local/bin/start.sh
-
-RUN objdump -p /usr/lib/libstdc\+\+.so.6
-
-# For details see: https://man7.org/linux/man-pages/man1/localedef.1.html
-RUN /usr/glibc-compat/bin/localedef -i en_US -f UTF-8 en_US.UTF-8
-#ENV LANG='C.UTF-8'
-#RUN echo "export LANG=${LANG}" > /etc/profile.d/locale.sh
-#RUN /usr/glibc-compat/bin/localedef --force --inputfile POSIX --charmap C.UTF-8 "${LANG}"
-
-# For testing we can insall node and see if it gives the version without error.
-# Currently node is not working with sgerrand/alpine-pkg-glibc.
-# There seems to be symbols (maybe functions) missing.
-# It will work if you:
-# $ apk --force-overwrite add libc6-compat gcompat
-
-ENTRYPOINT [ "start.sh" ]
+## Add the libc non-standard location to the path.
+RUN echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}"
