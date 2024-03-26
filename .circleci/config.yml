@@ -4,6 +4,12 @@ orbs:
   vr: kohirens/version-release@3.1.0
 
 parameters:
+  alpine_version_file:
+    default: alpine-latest-version.txt
+    type: string
+  glibc_version_file:
+    default: glibc-latest-version.txt
+    type: string
   secrets:
     default: kohirens-automation
     description: Secrets context
@@ -41,6 +47,12 @@ executors:
 default-env-vars: &default-env-vars
     DH_IMG_REPO: "kohirens/alpine-glibc"
     DOCKER_BUILDKIT: 1
+    ALPINE_VER: "3.19"
+    GLIBC_VER: "2.39"
+    AWS_VER: "v2"
+    NODE_VER: "v20.2.0"
+    NODE_DISTRO: "linux-x64"
+    NODE_HOME: "/usr/local/lib/nodejs"
 
 filter-semantic-tag: &filter-semantic-tag
   tags:
@@ -52,31 +64,28 @@ jobs:
     build-n-test:
       executor: base
       environment:
-        NODE_VER: v20.2.0
-        NODE_DISTRO: linux-x64
-        NODE_HOME: /usr/local/lib/nodejs
         <<: *default-env-vars
       steps:
         - attach_workspace: { at: "." }
         - setup_remote_docker
         - run:
+            name: "Setup dynamic environment variables"
+            command: |
+              echo "export DH_IMG=${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}" >> $BASH_ENV
+              # echo "export ALPINE_VER=$(cat << pipeline.parameters.alpine_version_file >>)" >> $BASH_ENV
+              # echo "export GLIBC_VER=$(cat << pipeline.parameters.glibc_version_file >>)" >> $BASH_ENV
+        - run:
             name: "Build container image and test"
             command: |
-              export ALPINE_VER=$(cat alpine-version.txt)
-              export GLIBC_VER=$(cat alpine-glibc-version.txt)
-              DH_IMG="${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}"
               echo "building ${DH_IMG}"
               docker build --rm --no-cache \
                 -t "${DH_IMG}" \
                 --build-arg ALPINE_VER --build-arg GLIBC_VER --target "release" \
                 --progress plain  .
-              docker run -it --rm "${DH_IMG}" ls -la /usr/glibc-compat
         - run:
             name: "Build Alpine glibc against AWS CLI"
             command: |
-              export ALPINE_VER=$(cat alpine-version.txt)
-              export GLIBC_VER=$(cat alpine-glibc-version.txt)
-              DH_IMG="${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}-aws-cli"
+              DH_IMG="${DH_IMG}-aws-cli"
               echo "building ${DH_IMG}"
               docker build --rm -t "${DH_IMG}" \
                 --build-arg ALPINE_VER --build-arg GLIBC_VER \
@@ -85,9 +94,7 @@ jobs:
         - run:
             name: "Build Alpine glibc against NodeJS"
             command: |
-              export ALPINE_VER=$(cat alpine-version.txt)
-              export GLIBC_VER=$(cat alpine-glibc-version.txt)
-              DH_IMG="${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}-nodejs"
+              DH_IMG="${DH_IMG}-nodejs"
               echo "building ${DH_IMG}"
               docker build --rm -t "${DH_IMG}" \
                 --build-arg ALPINE_VER --build-arg GLIBC_VER \
@@ -100,9 +107,6 @@ jobs:
             command: |
               docker ps -a
               docker images
-              export ALPINE_VER=$(cat alpine-version.txt)
-              export GLIBC_VER=$(cat alpine-glibc-version.txt)
-              DH_IMG="${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}"
               docker rmi "${DH_IMG}"
 
     fetch-code:
@@ -112,8 +116,11 @@ jobs:
         - run:
             name: "Get Alpine & Go latest versions"
             command: |
-              go-get-latest alpine > alpine-version.txt
-              go-get-latest alpine-glibc > alpine-glibc-version.txt
+              go-get-latest alpine > << pipeline.parameters.alpine_version_file >>
+              go-get-latest alpine-glibc > << pipeline.parameters.glibc_version_file >>
+              cat << pipeline.parameters.alpine_version_file >>
+              echo ""
+              cat << pipeline.parameters.glibc_version_file >>
         - persist_to_workspace:
             root: .
             paths: [ ./* ]
