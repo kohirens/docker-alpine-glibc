@@ -60,6 +60,13 @@ filter-semantic-tag: &filter-semantic-tag
   branches:
     ignore: /.*/
 
+dynamic-env-vars: &dynamic-env-vars
+    name: "Setup dynamic environment variables"
+    command: |
+      echo "export DH_IMG=${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}" >> $BASH_ENV
+      # echo "export ALPINE_VER=$(cat << pipeline.parameters.alpine_version_file >>)" >> $BASH_ENV
+      # echo "export GLIBC_VER=$(cat << pipeline.parameters.glibc_version_file >>)" >> $BASH_ENV
+
 jobs:
     build-n-test:
       executor: base
@@ -69,11 +76,7 @@ jobs:
         - attach_workspace: { at: "." }
         - setup_remote_docker
         - run:
-            name: "Setup dynamic environment variables"
-            command: |
-              echo "export DH_IMG=${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}" >> $BASH_ENV
-              # echo "export ALPINE_VER=$(cat << pipeline.parameters.alpine_version_file >>)" >> $BASH_ENV
-              # echo "export GLIBC_VER=$(cat << pipeline.parameters.glibc_version_file >>)" >> $BASH_ENV
+            <<: *dynamic-env-vars
         - run:
             name: "Build container image and test"
             command: |
@@ -133,10 +136,10 @@ jobs:
         - attach_workspace: { at: "." }
         - setup_remote_docker
         - run:
+            <<: *dynamic-env-vars
+        - run:
             name: Push Docker image
             command: |
-              export ALPINE_VER=$(cat alpine-version.txt)
-              export GLIBC_VER=$(cat alpine-glibc-version.txt)
               export DH_IMAGE="${DH_IMG_REPO}:${ALPINE_VER}-${GLIBC_VER}"
               echo "${DH_PASS}" | docker login -u "${DH_USER}" --password-stdin
               echo ""
