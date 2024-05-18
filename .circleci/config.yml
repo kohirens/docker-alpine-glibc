@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  vr: kohirens/version-release@3.1.0
+  vr: kohirens/version-release@4.0.3
 
 parameters:
   alpine_version_file:
@@ -31,14 +31,14 @@ parameters:
 executors:
   base:
     docker: # see https://circleci.com/developer/images/image/cimg/base#how-this-image-works
-      - image: cimg/base:2023.04
+      - image: cimg/base:current
         auth:
           username: ${DH_USER}
           password: ${DH_PASS}
     resource_class: small
   go-get-latest:
     docker: # see https://github.com/kohirens/go-get-latest
-      - image: kohirens/go-get-latest:0.4.1
+      - image: kohirens/go-get-latest:0.6.0
         auth:
           username: ${DH_USER}
           password: ${DH_PASS}
@@ -47,8 +47,6 @@ executors:
 default-env-vars: &default-env-vars
     DH_IMG_REPO: "kohirens/alpine-glibc"
     DOCKER_BUILDKIT: 1
-    ALPINE_VER: "3.19"
-    GLIBC_VER: "2.39"
     AWS_VER: "v2"
     NODE_VER: "v20.2.0"
     NODE_DISTRO: "linux-x64"
@@ -60,12 +58,15 @@ filter-semantic-tag: &filter-semantic-tag
   branches:
     ignore: /.*/
 
-dynamic-env-vars: &dynamic-env-vars
-    name: "Setup dynamic environment variables"
-    command: |
-      echo "export DH_IMG=${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}" >> $BASH_ENV
-      # echo "export ALPINE_VER=$(cat << pipeline.parameters.alpine_version_file >>)" >> $BASH_ENV
-      # echo "export GLIBC_VER=$(cat << pipeline.parameters.glibc_version_file >>)" >> $BASH_ENV
+commands:
+  dynamic-evars:
+    steps:
+      - run:
+          name: "Setup dynamic environment variables"
+          command: |
+            echo "export DH_IMG=${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}" >> $BASH_ENV
+            echo "export ALPINE_VER=$(cat << pipeline.parameters.alpine_version_file >>)" >> $BASH_ENV
+            echo "export GLIBC_VER=$(cat << pipeline.parameters.glibc_version_file >>)" >> $BASH_ENV
 
 jobs:
     build-n-test:
@@ -75,8 +76,7 @@ jobs:
       steps:
         - attach_workspace: { at: "." }
         - setup_remote_docker
-        - run:
-            <<: *dynamic-env-vars
+        - dynamic-evars
         - run:
             name: "Build container image and test"
             command: |
@@ -119,10 +119,9 @@ jobs:
         - run:
             name: "Get Alpine & Go latest versions"
             command: |
-              go-get-latest alpine > << pipeline.parameters.alpine_version_file >>
-              go-get-latest alpine-glibc > << pipeline.parameters.glibc_version_file >>
+              go-get-latest --no-patch alpine > << pipeline.parameters.alpine_version_file >>
+              go-get-latest --no-patch glibc > << pipeline.parameters.glibc_version_file >>
               cat << pipeline.parameters.alpine_version_file >>
-              echo ""
               cat << pipeline.parameters.glibc_version_file >>
         - persist_to_workspace:
             root: .
@@ -135,8 +134,7 @@ jobs:
       steps:
         - attach_workspace: { at: "." }
         - setup_remote_docker
-        - run:
-            <<: *dynamic-env-vars
+        - dynamic-evars
         - run:
             name: Push Docker image
             command: |
