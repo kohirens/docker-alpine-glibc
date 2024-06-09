@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
     container:
         image: "kohirens/alpine-glibc:dev-${ALPINE_VER}-${GLIBC_VER}"

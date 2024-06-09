@@ -1,7 +1,21 @@
 version: 2.1
 
+# anchors:
+default-env-vars: &default-env-vars
+  DOCKER_BUILDKIT: 1
+  AWS_VER: "v2"
+  NODE_VER: "v20.2.0"
+  NODE_DISTRO: "linux-x64"
+  NODE_HOME: "/usr/local/lib/nodejs"
+
+filter-semantic-tag: &filter-semantic-tag
+  tags:
+    only: /^v?\d+\.\d+\.\d+$/
+  branches:
+    ignore: /.*/
+
 orbs:
-  vr: kohirens/version-release@3.1.0
+  vr: kohirens/version-release@4.0.3
 
 parameters:
   alpine_version_file:
@@ -9,6 +23,9 @@ parameters:
     type: string
   glibc_version_file:
     default: glibc-latest-version.txt
+    type: string
+  docker_repo:
+    default: kohirens/alpine-glibc
     type: string
   secrets:
     default: kohirens-automation
@@ -27,45 +44,34 @@ parameters:
     description: Workflow to be executed.
     type: string
 
-# Anchors
 executors:
   base:
     docker: # see https://circleci.com/developer/images/image/cimg/base#how-this-image-works
-      - image: cimg/base:2023.04
+      - image: cimg/base:current
         auth:
           username: ${DH_USER}
           password: ${DH_PASS}
     resource_class: small
   go-get-latest:
     docker: # see https://github.com/kohirens/go-get-latest
-      - image: kohirens/go-get-latest:0.4.1
+      - image: kohirens/go-get-latest:0.6.0
         auth:
           username: ${DH_USER}
           password: ${DH_PASS}
     resource_class: small
 
-default-env-vars: &default-env-vars
-    DH_IMG_REPO: "kohirens/alpine-glibc"
-    DOCKER_BUILDKIT: 1
-    ALPINE_VER: "3.19"
-    GLIBC_VER: "2.39"
-    AWS_VER: "v2"
-    NODE_VER: "v20.2.0"
-    NODE_DISTRO: "linux-x64"
-    NODE_HOME: "/usr/local/lib/nodejs"
-
-filter-semantic-tag: &filter-semantic-tag
-  tags:
-    only: /^v?\d+\.\d+\.\d+$/
-  branches:
-    ignore: /.*/
-
-dynamic-env-vars: &dynamic-env-vars
-    name: "Setup dynamic environment variables"
-    command: |
-      echo "export DH_IMG=${DH_IMG_REPO}:dev-${ALPINE_VER}-${GLIBC_VER}" >> $BASH_ENV
-      # echo "export ALPINE_VER=$(cat << pipeline.parameters.alpine_version_file >>)" >> $BASH_ENV
-      # echo "export GLIBC_VER=$(cat << pipeline.parameters.glibc_version_file >>)" >> $BASH_ENV
+commands:
+  dynamic-evars:
+    steps:
+      - run:
+          name: "Setup dynamic environment variables"
+          command: |
+            ALPINE_VER="$(cat << pipeline.parameters.alpine_version_file >>)"
+            GLIBC_VER="$(cat << pipeline.parameters.glibc_version_file >>)"
+            echo "export ALPINE_VER=${ALPINE_VER}" >> $BASH_ENV
+            echo "export GLIBC_VER=${GLIBC_VER}" >> $BASH_ENV
+            echo "export DH_IMG=<<pipeline.parameters.docker_repo>>:${ALPINE_VER}-${GLIBC_VER}" >> $BASH_ENV
+            echo "export DH_DEV_IMG=<<pipeline.parameters.docker_repo>>:dev-${ALPINE_VER}-${GLIBC_VER}" >> $BASH_ENV
 
 jobs:
     build-n-test:
@@ -74,43 +80,43 @@ jobs:
         <<: *default-env-vars
       steps:
         - attach_workspace: { at: "." }
-        - setup_remote_docker
+        - setup_remote_docker:
+            docker_layer_caching: true
+        - dynamic-evars
         - run:
-            <<: *dynamic-env-vars
-        - run:
-            name: "Build container image and test"
+            name: "Build base image and test"
             command: |
-              echo "building ${DH_IMG}"
+              echo "building ${DH_DEV_IMG}"
               docker build --rm --no-cache \
-                -t "${DH_IMG}" \
+                -t "${DH_DEV_IMG}" \
                 --build-arg ALPINE_VER --build-arg GLIBC_VER --target "release" \
-                --progress plain  .
+                .
         - run:
             name: "Build Alpine glibc against AWS CLI"
             command: |
-              DH_IMG="${DH_IMG}-aws-cli"
+              DH_IMG="${DH_DEV_IMG}-aws-cli"
               echo "building ${DH_IMG}"
               docker build --rm -t "${DH_IMG}" \
                 --build-arg ALPINE_VER --build-arg GLIBC_VER \
-                --progress plain  tests/aws-cli
+                tests/aws-cli
               docker rmi "${DH_IMG}"
         - run:
             name: "Build Alpine glibc against NodeJS"
             command: |
-              DH_IMG="${DH_IMG}-nodejs"
+              DH_IMG="${DH_DEV_IMG}-nodejs"
               echo "building ${DH_IMG}"
               docker build --rm -t "${DH_IMG}" \
                 --build-arg ALPINE_VER --build-arg GLIBC_VER \
                 --build-arg NODE_VER --build-arg NODE_DISTRO \
                 --build-arg NODE_HOME \
-                --progress plain  tests/nodejs
+                tests/nodejs
               docker rmi "${DH_IMG}"
         - run:
             name: "Cleanup container images"
             command: |
               docker ps -a
               docker images
-              docker rmi "${DH_IMG}"
+              docker rmi "${DH_DEV_IMG}"
 
     fetch-code:
       executor: go-get-latest
@@ -119,10 +125,9 @@ jobs:
         - run:
             name: "Get Alpine & Go latest versions"
             command: |
-              go-get-latest alpine > << pipeline.parameters.alpine_version_file >>
-              go-get-latest alpine-glibc > << pipeline.parameters.glibc_version_file >>
+              go-get-latest --no-patch alpine > << pipeline.parameters.alpine_version_file >>
+              go-get-latest --no-patch glibc > << pipeline.parameters.glibc_version_file >>
               cat << pipeline.parameters.alpine_version_file >>
-              echo ""
               cat << pipeline.parameters.glibc_version_file >>
         - persist_to_workspace:
             root: .
@@ -135,18 +140,17 @@ jobs:
       steps:
         - attach_workspace: { at: "." }
         - setup_remote_docker
-        - run:
-            <<: *dynamic-env-vars
+        - dynamic-evars
         - run:
             name: Push Docker image
             command: |
-              export DH_IMAGE="${DH_IMG_REPO}:${ALPINE_VER}-${GLIBC_VER}"
+              export DH_IMAGE="<<pipeline.parameters.docker_repo>>:${ALPINE_VER}-${GLIBC_VER}"
               echo "${DH_PASS}" | docker login -u "${DH_USER}" --password-stdin
               echo ""
               echo ""
               echo "Building ${DH_IMAGE}"
               docker build --rm --no-cache \
-                  -t "${DH_IMG_REPO}:${ALPINE_VER}-${GLIBC_VER}" \
+                  -t "<<pipeline.parameters.docker_repo>>:${ALPINE_VER}-${GLIBC_VER}" \
                   --build-arg ALPINE_VER --build-arg GLIBC_VER \
                   --target "release" .
               echo ""
